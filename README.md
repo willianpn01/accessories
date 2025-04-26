@@ -83,6 +83,3 @@ Contribuições são bem-vindas! Abra issues ou pull requests para sugerir melho
 
 Este projeto está sob a licença MIT.
 
----
-
-**Dica:** Se for publicar no GitHub, adicione prints das telas e exemplos de uso para engajar mais usuários!
