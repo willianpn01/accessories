@@ -1,0 +1,7 @@
+PyQt6
+Pillow
+PyPDF2
+pdfplumber
+pytesseract
+reportlab
+python-docx

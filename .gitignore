@@ -1,0 +1,13 @@
+# Python
+venv/
+__pycache__/
+
+# Node
+node_modules/
+build/
+
+# Misc
+.env
+.DS_Store
+# Removido: backend/
+# Removido: frontend/
