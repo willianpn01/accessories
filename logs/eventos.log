@@ -1,3 +1,6 @@
 [2025-04-26 17:00:11] [ERRO] Análise de pasta/relatório | [WinError 53] O caminho da rede não foi encontrado: 'Y:/Lilith\\Backup\\YourSmallDoll\\YourSmallDoll_0259.jpg'
 NoneType: None
 
+[2025-04-26 20:18:40] [ERRO] Conversão de imagens | converter_imagem() takes 2 positional arguments but 3 were given
+NoneType: None
+

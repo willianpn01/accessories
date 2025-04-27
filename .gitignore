@@ -6,6 +6,13 @@ __pycache__/
 node_modules/
 build/
 
+# Arquivos de testes e temporários
+__pycache__/
+*.pyc
+*.pyo
+*.pytest_cache/
+test_utils.py
+
 # Misc
 .env
 .DS_Store

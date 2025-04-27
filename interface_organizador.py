@@ -1,6 +1,6 @@
 import sys
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QFileDialog, QMessageBox, QListWidget, QListWidgetItem, QHBoxLayout, QComboBox, QTabWidget, QMainWindow, QDockWidget, QListView, QStackedWidget, QProgressBar, QLineEdit
+    QApplication, QWidget, QVBoxLayout, QPushButton, QLabel, QFileDialog, QMessageBox, QListWidget, QListWidgetItem, QHBoxLayout, QComboBox, QTabWidget, QMainWindow, QDockWidget, QListView, QStackedWidget, QProgressBar, QLineEdit, QTableWidget, QTableWidgetItem
 )
 from PyQt6.QtGui import QPixmap, QIcon
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
@@ -9,112 +9,212 @@ from conversor_imagem import converter_imagem
 from renomeador import listar_arquivos, renomear_arquivos
 from redimensionador import redimensionar_imagens
 from pdf_utils import dividir_pdf, mesclar_pdfs, imagens_para_pdf, extrair_texto_pdf
-from ocr_utils import ocr_imagem, ocr_pdf, ocr_pdf_to_pdf
+from ocr_utils import ocr_imagem, ocr_pdf, ocr_layout
 from docx_utils import docx_para_pdf, pdf_para_docx
 from relatorio_utils import analisar_pasta, gerar_relatorio_html, gerar_relatorio_pdf, gerar_grafico_pizza
 from log_utils import registrar_evento, registrar_erro, ler_logs, exportar_logs
 import os
+import json
+
+SETTINGS_FILE = 'settings.json'
+
+def carregar_tema():
+    if os.path.exists(SETTINGS_FILE):
+        try:
+            with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
+                cfg = json.load(f)
+                return cfg.get('tema', 'escuro')
+        except Exception:
+            return 'escuro'
+    return 'escuro'
+
+def salvar_tema(tema):
+    try:
+        with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+            json.dump({'tema': tema}, f)
+    except Exception:
+        pass
 
 # Função para aplicar tema moderno
 MODERN_STYLE = """
-/* Tema escuro moderno para toda a aplicação */
 QWidget {
-    background: #23272e;
-    color: #f1f1f1;
+    background: rgba(245, 247, 250, 0.55);
+    color: #23272e;
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-size: 15px;
+    border-radius: 18px;
+    border: 1.5px solid rgba(255,255,255,0.4);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
+}
+QMainWindow {
+    background: rgba(230, 233, 239, 0.50);
+    border-radius: 18px;
+}
+QTabWidget::pane {
+    border: 1.5px solid rgba(255,255,255,0.3);
+    border-radius: 18px;
+    background: rgba(245, 247, 250, 0.55);
+    margin: 8px;
+}
+QPushButton {
+    background-color: rgba(230, 233, 239, 0.6);
+    border-radius: 12px;
+    padding: 6px 16px;
+    border: 1.5px solid rgba(255,255,255,0.4);
+    box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.10);
+    font-weight: 500;
+}
+QPushButton:hover {
+    background-color: rgba(208, 214, 225, 0.7);
+}
+QLineEdit, QComboBox {
+    background: rgba(255,255,255,0.65);
+    border: 1.5px solid rgba(255,255,255,0.4);
+    border-radius: 10px;
+    color: #23272e;
+    font-size: 15px;
+}
+QComboBox QAbstractItemView {
+    background: rgba(255,255,255,0.85);
+    color: #23272e;
+    border-radius: 8px;
+}
+QTableWidget, QListWidget {
+    background: rgba(255,255,255,0.65);
+    border: 1.5px solid rgba(255,255,255,0.3);
+    border-radius: 10px;
+    color: #23272e;
+}
+QHeaderView::section {
+    background: rgba(230, 233, 239, 0.65);
+    border-radius: 8px;
+    font-weight: bold;
+}
+QProgressBar {
+    background: rgba(255,255,255,0.6);
+    border: 1.5px solid rgba(255,255,255,0.3);
+    border-radius: 10px;
+    text-align: center;
+    color: #23272e;
+}
+QProgressBar::chunk {
+    background-color: rgba(31, 38, 135, 0.25);
+    border-radius: 10px;
+}
+"""
+
+# --- Tema Claro ---
+LIGHT_STYLE = """
+QWidget {
+    background: #f5f7fa;
+    color: #23272e;
     font-family: 'Segoe UI', 'Arial', sans-serif;
     font-size: 15px;
 }
 QMainWindow {
-    background: #21252b;
+    background: #e6e9ef;
 }
 QTabWidget::pane {
-    border: 1px solid #444;
+    border: 1px solid #bbb;
     border-radius: 10px;
-    background: #23272e;
+    background: #f5f7fa;
     margin: 8px;
-    box-shadow: 0px 2px 12px #111;
-}
-QTabBar::tab {
-    background: #23272e;
-    border: 1px solid #444;
-    border-radius: 8px;
-    padding: 8px 22px;
-    margin: 2px;
-    font-weight: 500;
-}
-QTabBar::tab:selected, QTabBar::tab:hover {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #4e6ef2, stop:1 #23272e);
-    color: #fff;
-    border: 2px solid #4e6ef2;
 }
 QPushButton {
-    background: #323846;
-    border-radius: 8px;
-    border: 1px solid #444;
-    padding: 8px 20px;
-    font-size: 15px;
-    font-weight: 500;
-    margin: 6px 0;
+    background-color: #e6e9ef;
+    border-radius: 6px;
+    padding: 6px 16px;
+    border: 1px solid #ccc;
 }
 QPushButton:hover {
-    background: #4e6ef2;
-    color: #fff;
-    border: 1.5px solid #4e6ef2;
+    background-color: #d0d6e1;
 }
-QPushButton:pressed {
-    background: #3a3f4b;
-}
-QLabel {
-    color: #f1f1f1;
-    font-size: 15px;
-}
-QLineEdit, QComboBox, QListWidget, QSpinBox {
-    background: #2c313c;
+QLineEdit, QComboBox {
+    background: #fff;
+    border: 1px solid #bbb;
     border-radius: 6px;
-    border: 1px solid #444;
-    color: #f1f1f1;
-    padding: 6px;
-    font-size: 15px;
-}
-QListWidget::item {
-    padding: 8px 10px;
-    border-bottom: 1px solid #353945;
-}
-QListWidget::item:selected {
-    background: #4e6ef2;
-    color: #fff;
-}
-QDockWidget {
-    background: #23272e;
-    border: none;
-}
-QDockWidget::title {
-    background: transparent;
-    color: #8aa4f7;
-    font-size: 16px;
-    font-weight: bold;
-    padding: 8px 0 2px 8px;
-}
-QScrollBar:vertical {
-    background: #23272e;
-    width: 12px;
-    margin: 0px 0px 0px 0px;
-    border-radius: 6px;
-}
-QScrollBar::handle:vertical {
-    background: #4e6ef2;
-    min-height: 24px;
-    border-radius: 6px;
-}
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-    height: 0px;
+    color: #23272e;
 }
 QComboBox QAbstractItemView {
-    background: #23272e;
+    background: #fff;
+    color: #23272e;
+    border: 1px solid #bbb;
+    selection-background-color: #d0d6e1;
+    selection-color: #23272e;
+}
+QListWidget {
+    background: #fff;
+    border: 1px solid #bbb;
+    border-radius: 8px;
+    color: #23272e;
+}
+"""
+
+# --- Tema Escuro ---
+DARK_STYLE = """
+QWidget {
+    background: rgba(30, 34, 40, 0.80);
     color: #f1f1f1;
-    border-radius: 6px;
-    selection-background-color: #4e6ef2;
-    selection-color: #fff;
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-size: 15px;
+    border-radius: 18px;
+    border: 1.5px solid rgba(255,255,255,0.10);
+}
+QMainWindow {
+    background: rgba(24, 26, 32, 0.85);
+    border-radius: 18px;
+}
+QTabWidget::pane {
+    border: 1.5px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
+    background: rgba(30, 34, 40, 0.80);
+    margin: 8px;
+}
+QPushButton {
+    background-color: rgba(40, 44, 52, 0.70);
+    border-radius: 12px;
+    padding: 6px 16px;
+    border: 1.5px solid rgba(255,255,255,0.10);
+    color: #f1f1f1;
+    font-weight: 500;
+}
+QPushButton:hover {
+    background-color: rgba(60, 66, 82, 0.80);
+}
+QLineEdit, QComboBox {
+    background: rgba(44, 48, 56, 0.85);
+    border: 1.5px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    color: #f1f1f1;
+    font-size: 15px;
+}
+QComboBox QAbstractItemView {
+    background: rgba(44, 48, 56, 0.95);
+    color: #f1f1f1;
+    border-radius: 8px;
+}
+QTableWidget, QListWidget {
+    background: rgba(44, 48, 56, 0.80);
+    border: 1.5px solid rgba(255,255,255,0.10);
+    border-radius: 10px;
+    color: #f1f1f1;
+}
+QHeaderView::section {
+    background: rgba(24, 26, 32, 0.85);
+    border-radius: 8px;
+    font-weight: bold;
+    color: #f1f1f1;
+}
+QProgressBar {
+    background: rgba(44, 48, 56, 0.80);
+    border: 1.5px solid rgba(255,255,255,0.10);
+    border-radius: 10px;
+    text-align: center;
+    color: #f1f1f1;
+}
+QProgressBar::chunk {
+    background-color: rgba(80, 120, 220, 0.35);
+    border-radius: 10px;
 }
 """
 
@@ -166,8 +266,9 @@ class ConversaoImagemWorker(WorkerBase):
         try:
             for idx, arquivo in enumerate(self.arquivos):
                 self.check_cancelado()
-                out = converter_imagem(arquivo, self.formato, self.pasta_saida)
-                resultados.append((arquivo, out))
+                convs = converter_imagem(arquivo, self.formato, self.pasta_saida)
+                for inp, out in convs:
+                    resultados.append((inp, out))
                 self.progresso.emit(int((idx+1)/total*100))
             self.resultado.emit(resultados)
         except Exception as e:
@@ -448,6 +549,10 @@ class RedimensionadorTab(QWidget):
         self.progress.setVisible(False)
         self.btn_cancelar.setVisible(False)
         for inp, out in resultados:
+            if isinstance(inp, (list, tuple)):
+                inp = inp[0]
+            if isinstance(out, (list, tuple)):
+                out = out[0]
             self.result_list.addItem(f'{os.path.basename(inp)} → {os.path.basename(out)}')
         QMessageBox.information(self, 'Redimensionamento', 'Redimensionamento concluído!')
     def redim_erro(self, exc):
@@ -1057,16 +1162,219 @@ class LogsTab(QWidget):
         else:
             QMessageBox.warning(self, 'Exportação', 'Nenhum log para exportar.')
 
+class ConfigTab(QWidget):
+    def __init__(self, main_window):
+        super().__init__()
+        self.main_window = main_window
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel('Configurações'))
+        htema = QHBoxLayout()
+        htema.addWidget(QLabel('Tema:'))
+        self.combo_tema = QComboBox()
+        self.combo_tema.addItems(['Escuro', 'Claro'])
+        tema_atual = self.main_window.tema_atual
+        self.combo_tema.setCurrentIndex(0 if tema_atual == 'escuro' else 1)
+        self.combo_tema.currentIndexChanged.connect(self.trocar_tema)
+        htema.addWidget(self.combo_tema)
+        layout.addLayout(htema)
+        self.btn_logs = QPushButton('Abrir Logs do Sistema')
+        self.btn_logs.clicked.connect(self.abrir_logs)
+        layout.addWidget(self.btn_logs)
+        layout.addStretch()
+        self.setLayout(layout)
+    def trocar_tema(self, idx):
+        if idx == 0:
+            self.main_window.setStyleSheet(DARK_STYLE)
+            self.main_window.tema_atual = 'escuro'
+            salvar_tema('escuro')
+        else:
+            self.main_window.setStyleSheet(LIGHT_STYLE)
+            self.main_window.tema_atual = 'claro'
+            salvar_tema('claro')
+    def abrir_logs(self):
+        self.main_window.open_logs_tab()
+
+class RenomeadorTab(QWidget):
+    def __init__(self):
+        super().__init__()
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel('Renomeador de Arquivos em Lote'))
+        self.btn_select = QPushButton('Selecionar Pasta')
+        self.btn_select.clicked.connect(self.select_folder)
+        layout.addWidget(self.btn_select)
+        self.label_pasta = QLabel('Nenhuma pasta selecionada.')
+        layout.addWidget(self.label_pasta)
+        self.list_widget = QListWidget()
+        layout.addWidget(self.list_widget)
+        hbox = QHBoxLayout()
+        hbox.addWidget(QLabel('Nome base:'))
+        self.input_nome = QLineEdit()
+        hbox.addWidget(self.input_nome)
+        hbox.addWidget(QLabel('Extensão:'))
+        self.input_ext = QComboBox()
+        self.input_ext.setMinimumWidth(120)
+        self.input_ext.addItem('')
+        hbox.addWidget(self.input_ext)
+        self.cb_numero = QComboBox()
+        self.cb_numero.addItems(['Adicionar número', 'Sem número'])
+        hbox.addWidget(self.cb_numero)
+        layout.addLayout(hbox)
+        self.btn_renomear = QPushButton('Renomear Arquivos')
+        self.btn_renomear.clicked.connect(self.renomear)
+        self.btn_renomear.setEnabled(False)
+        layout.addWidget(self.btn_renomear)
+        self.setLayout(layout)
+        self.pasta = ''
+        self.arquivos = []
+        self.input_ext.currentIndexChanged.connect(self.filtrar_extensao)
+
+    def select_folder(self):
+        pasta = QFileDialog.getExistingDirectory(self, 'Selecione a pasta')
+        if pasta:
+            self.pasta = pasta
+            self.label_pasta.setText(f'Pasta selecionada: {pasta}')
+            self.listar()
+            self.btn_renomear.setEnabled(True)
+        else:
+            self.pasta = ''
+            self.label_pasta.setText('Nenhuma pasta selecionada.')
+            self.btn_renomear.setEnabled(False)
+            self.list_widget.clear()
+
+    def listar(self):
+        from renomeador import listar_arquivos
+        self.arquivos = listar_arquivos(self.pasta)
+        self.list_widget.clear()
+        exts = set()
+        for nome in self.arquivos:
+            self.list_widget.addItem(nome)
+            exts.add(os.path.splitext(nome)[1])
+        self.input_ext.clear()
+        self.input_ext.addItem('')
+        for ext in sorted(exts):
+            if ext:
+                self.input_ext.addItem(ext)
+
+    def renomear(self):
+        from renomeador import renomear_arquivos
+        nome_base = self.input_nome.text().strip()
+        ext = self.input_ext.currentText().strip()
+        adicionar_numero = self.cb_numero.currentIndex() == 0
+        arquivos = self.arquivos
+        if ext:
+            arquivos = [a for a in arquivos if a.lower().endswith(ext.lower())]
+        if not arquivos:
+            QMessageBox.warning(self, 'Aviso', 'Nenhum arquivo para renomear.')
+            return
+        renomeados = renomear_arquivos(self.pasta, arquivos, nome_base, somente_ext=ext if ext else None, adicionar_numero=adicionar_numero)
+        msg = '\n'.join([f'{antigo} → {novo}' for antigo, novo in renomeados])
+        QMessageBox.information(self, 'Renomeação concluída', msg)
+        self.listar()
+
+    def filtrar_extensao(self):
+        ext = self.input_ext.currentText().strip()
+        self.list_widget.clear()
+        if not ext:
+            for nome in self.arquivos:
+                self.list_widget.addItem(nome)
+        else:
+            for nome in self.arquivos:
+                if nome.lower().endswith(ext.lower()):
+                    self.list_widget.addItem(nome)
+
+class OCRAvancadoTab(QWidget):
+    def __init__(self):
+        super().__init__()
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel('OCR Avançado: Tabelas e Formulários'))
+        hbox = QHBoxLayout()
+        self.btn_select = QPushButton('Selecionar Imagem')
+        self.btn_select.clicked.connect(self.selecionar_img)
+        hbox.addWidget(self.btn_select)
+        self.label_img = QLabel('Nenhuma imagem selecionada.')
+        hbox.addWidget(self.label_img)
+        layout.addLayout(hbox)
+        self.btn_ocr = QPushButton('Executar OCR Avançado')
+        self.btn_ocr.clicked.connect(self.executar_ocr)
+        self.btn_ocr.setEnabled(False)
+        layout.addWidget(self.btn_ocr)
+        self.table = QTableWidget()
+        layout.addWidget(self.table)
+        self.btn_export = QPushButton('Exportar para CSV')
+        self.btn_export.clicked.connect(self.exportar_csv)
+        self.btn_export.setEnabled(False)
+        layout.addWidget(self.btn_export)
+        self.setLayout(layout)
+        self.img_path = ''
+        self.linhas = []
+
+    def selecionar_img(self):
+        file, _ = QFileDialog.getOpenFileName(self, 'Escolha uma imagem', '', 'Imagens (*.png *.jpg *.jpeg *.jfif *.bmp *.gif *.webp)')
+        if file:
+            self.img_path = file
+            self.label_img.setText(os.path.basename(file))
+            self.btn_ocr.setEnabled(True)
+        else:
+            self.img_path = ''
+            self.label_img.setText('Nenhuma imagem selecionada.')
+            self.btn_ocr.setEnabled(False)
+            self.btn_export.setEnabled(False)
+            self.table.clear()
+            self.table.setRowCount(0)
+            self.table.setColumnCount(0)
+
+    def executar_ocr(self):
+        from ocr_utils import ocr_layout
+        try:
+            self.linhas = ocr_layout(self.img_path)
+            self.exibir_tabela()
+            self.btn_export.setEnabled(bool(self.linhas))
+        except Exception as e:
+            QMessageBox.critical(self, 'Erro', f'Erro no OCR avançado:\n{str(e)}')
+            self.linhas = []
+            self.btn_export.setEnabled(False)
+            self.table.clear()
+            self.table.setRowCount(0)
+            self.table.setColumnCount(0)
+
+    def exibir_tabela(self):
+        self.table.clear()
+        if not self.linhas:
+            self.table.setRowCount(0)
+            self.table.setColumnCount(0)
+            return
+        max_cols = max(len(l) for l in self.linhas)
+        self.table.setRowCount(len(self.linhas))
+        self.table.setColumnCount(max_cols)
+        for i, linha in enumerate(self.linhas):
+            for j, celula in enumerate(linha):
+                self.table.setItem(i, j, QTableWidgetItem(str(celula)))
+
+    def exportar_csv(self):
+        if not self.linhas:
+            return
+        file, _ = QFileDialog.getSaveFileName(self, 'Salvar como CSV', '', 'CSV (*.csv)')
+        if not file:
+            return
+        import csv
+        with open(file, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            for linha in self.linhas:
+                writer.writerow(linha)
+        QMessageBox.information(self, 'Exportação', 'Arquivo CSV salvo com sucesso!')
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.tema_atual = carregar_tema()
+        self.setStyleSheet(DARK_STYLE if self.tema_atual == 'escuro' else LIGHT_STYLE)
         self.setWindowTitle('Suite de Utilitários')
         self.setGeometry(150, 150, 700, 550)
         self.tabs = QTabWidget()
         self.tabs.setTabsClosable(True)
         self.tabs.tabCloseRequested.connect(self.close_tab)
         self.setCentralWidget(self.tabs)
-        self.dock = QDockWidget('Funcionalidades', self)
+        self.dock = QDockWidget('Menu', self)
         self.dock.setFeatures(QDockWidget.DockWidgetFeature.NoDockWidgetFeatures)
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.dock)
         dock_widget = QWidget()
@@ -1077,6 +1385,9 @@ class MainWindow(QMainWindow):
         self.btn_abrir_ocrimg = QPushButton('OCR de Imagens')
         self.btn_abrir_ocrimg.clicked.connect(self.open_ocrimg_tab)
         dock_layout.addWidget(self.btn_abrir_ocrimg)
+        self.btn_abrir_ocravancado = QPushButton('OCR Avançado (Tabelas - Imagem)')
+        self.btn_abrir_ocravancado.clicked.connect(self.open_ocravancado_tab)
+        dock_layout.addWidget(self.btn_abrir_ocravancado)
         self.btn_abrir_conversor = QPushButton('Conversor de Imagem')
         self.btn_abrir_conversor.clicked.connect(self.open_conversor_tab)
         dock_layout.addWidget(self.btn_abrir_conversor)
@@ -1092,12 +1403,13 @@ class MainWindow(QMainWindow):
         self.btn_abrir_relatorio = QPushButton('Gerador de Relatórios')
         self.btn_abrir_relatorio.clicked.connect(self.open_relatorio_tab)
         dock_layout.addWidget(self.btn_abrir_relatorio)
-        self.btn_abrir_logs = QPushButton('Logs do Sistema')
-        self.btn_abrir_logs.clicked.connect(self.open_logs_tab)
-        dock_layout.addWidget(self.btn_abrir_logs)
+        self.btn_abrir_config = QPushButton('Configurações')
+        self.btn_abrir_config.clicked.connect(self.open_config_tab)
+        dock_layout.addWidget(self.btn_abrir_config)
         dock_layout.addStretch()
         dock_widget.setLayout(dock_layout)
         self.dock.setWidget(dock_widget)
+        self.setStyleSheet(DARK_STYLE if self.tema_atual == 'escuro' else LIGHT_STYLE)
         self.open_tabs = {}
 
     def open_organizador_tab(self):
@@ -1118,6 +1430,16 @@ class MainWindow(QMainWindow):
             self.open_tabs['ocrimg'] = tab
         else:
             idx = self.tabs.indexOf(self.open_tabs['ocrimg'])
+            self.tabs.setCurrentIndex(idx)
+
+    def open_ocravancado_tab(self):
+        if 'ocravancado' not in self.open_tabs:
+            tab = OCRAvancadoTab()
+            idx = self.tabs.addTab(tab, 'OCR Avançado')
+            self.tabs.setCurrentIndex(idx)
+            self.open_tabs['ocravancado'] = tab
+        else:
+            idx = self.tabs.indexOf(self.open_tabs['ocravancado'])
             self.tabs.setCurrentIndex(idx)
 
     def open_conversor_tab(self):
@@ -1180,6 +1502,16 @@ class MainWindow(QMainWindow):
             idx = self.tabs.indexOf(self.open_tabs['logs'])
             self.tabs.setCurrentIndex(idx)
 
+    def open_config_tab(self):
+        if 'config' not in self.open_tabs:
+            tab = ConfigTab(self)
+            idx = self.tabs.addTab(tab, 'Configurações')
+            self.tabs.setCurrentIndex(idx)
+            self.open_tabs['config'] = tab
+        else:
+            idx = self.tabs.indexOf(self.open_tabs['config'])
+            self.tabs.setCurrentIndex(idx)
+
     def close_tab(self, index):
         widget = self.tabs.widget(index)
         for key, tab in list(self.open_tabs.items()):
@@ -1189,7 +1521,6 @@ class MainWindow(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    app.setStyleSheet(MODERN_STYLE)
     win = MainWindow()
     win.setWindowIcon(QIcon.fromTheme('applications-utilities'))
     win.show()
