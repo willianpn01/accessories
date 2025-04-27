@@ -24,7 +24,7 @@ Uma suíte completa e moderna para organizar, converter, renomear, redimensionar
 
 1. **Clone o repositório:**
    ```bash
-   git clone https://github.com/willianpn01/accessories
+   git clone https://github.com/willianpn01/accessories.git
    cd seu-repo
    ```
 2. **Crie um ambiente virtual (opcional, mas recomendado):**
@@ -82,6 +82,4 @@ Contribuições são bem-vindas! Abra issues ou pull requests para sugerir melho
 ## Licença
 
 Este projeto está sob a licença MIT.
-
----
 
